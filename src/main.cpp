@@ -33,8 +33,8 @@ int main(int argc,char* argv[])
     std::cout << "PROCESS STRAT" << std::endl;
     MEMORY memory;
     CMD_QUEUE cmd_queue;
-//    char* mem_fil="memory.txt";
-//    char* cmd_fil="cmd.txt";
+//    char* mem_fil="memory_all.txt";
+//    char* cmd_fil="cmd_all.txt";
 //    char* stats_fil="stats.txt";
     char* mem_fil=argv[1];
     char* cmd_fil=argv[2];

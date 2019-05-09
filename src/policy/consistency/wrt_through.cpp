@@ -270,7 +270,8 @@ int wrt_through(CMD* cmd,MEMORY* memory,CACHE* L1,CACHE* L2,int l1_size,int l2_s
             if(in==1) { update_lru(&L1[i],block); }
         }
         block=find_cache(cmd->addr,L2,l2_size,l2_assoc,&in);
-        update_lru(L2,block);
+        if(in){update_lru(L2,block);}
+        else{EPRINTF("L2 CACHE LOSS DATA\n");}
     }
     else//don't in the L1 Cache
     {

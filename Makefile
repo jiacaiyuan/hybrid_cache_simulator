@@ -5,10 +5,10 @@ OBJ_DIR=./obj
 BIN_DIR=./bin
 TARGET=hc_simu
 
-MEM_FILE=./demo/memory_all.txt
-CMD_FILE= ./demo/cmd_all.txt
-#MEM_FILE=./demo/memory.txt
-#CMD_FILE= ./demo/cmd.txt
+#MEM_FILE=./demo/memory_all.txt
+#CMD_FILE= ./demo/cmd_all.txt
+MEM_FILE=./demo/memory.txt
+CMD_FILE= ./demo/cmd.txt
 STAT_FILE=./stats/stats.txt
 
 .PHONY:default
@@ -26,11 +26,11 @@ BASE:
 
  .PHONY:LRU
 LRU:
-	$(CC) -c $(SRC_DIR)/policy/replace/lru.cpp -o $(OBJ_DIR)/replace.o
+	$(CC) $(PARA) -c $(SRC_DIR)/policy/replace/lru.cpp -o $(OBJ_DIR)/replace.o
 
  .PHONY:WRT_THROUGH
 WRT_THROUGH:
-	$(CC) -c $(SRC_DIR)/policy/consistency/wrt_through.cpp -o $(OBJ_DIR)/consistency.o
+	$(CC) $(PARA) -c $(SRC_DIR)/policy/consistency/wrt_through.cpp -o $(OBJ_DIR)/consistency.o
 
 .PHONY:compile
 compile:BASE LRU WRT_THROUGH

@@ -12,13 +12,19 @@ So, if All Block in one LRU List, then each Assoc Group is in the order of LRU,t
 int update_lru(CACHE* cache,CACHEBLCOK* cacheblock)
 {
     //first oldest,tail new
+    CACHEBLCOK new_block;
+    int i;
     std::list<CACHEBLCOK>::iterator iter;
     for(iter = (*cache).begin(); iter != (*cache).end(); iter++)
     {
         if(((*iter).tagger==(*cacheblock).tagger)&((*iter).index==(*cacheblock).index))
         {
+            new_block.flag=cacheblock->flag;
+            new_block.index=cacheblock->index;
+            new_block.tagger=cacheblock->tagger;
+            for(i=0;i<CACHELINE;i++) { new_block.data[i]=cacheblock->data[i];}
             (*cache).erase(iter);//find the block,and erase it
-            (*cache).push_back(*cacheblock);//and push the blcok back in the LRU List
+            (*cache).push_back(new_block);//and push the blcok back in the LRU List
             //DPRINTF("UPDATE LRU\n");
             return 0;
         }
@@ -26,6 +32,8 @@ int update_lru(CACHE* cache,CACHEBLCOK* cacheblock)
     EPRINTF("UPDATE LRU NO FIND\n");
     return 1;
 }
+
+
 
 /*due to the Assoc of Cache, when need to evict, we need to evict the oldest block
 in the same Assoc Group, in one Group,their index is same and different in tagger*/
