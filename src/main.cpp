@@ -18,27 +18,22 @@
 #include "cmd/command.h"
 #include "cache/cache.h"
 #include "stats/stats.h"
+#include "policy/consistency/wrt_through.h"
+#include "policy/replace/lru.h"
+#include "policy/consistency/mesi.h"
 
-#ifdef WRT_THROUGH
-    #include "policy/consistency/wrt_through.h"
-#endif // WRT_THROUGH
 
-#ifdef LRU
-    #include "policy/replace/lru.h"
-#endif // LRU
-
-#define EXE_THRESHOLD
 int main(int argc,char* argv[])
 {
     std::cout << "PROCESS STRAT" << std::endl;
     MEMORY memory;
     CMD_QUEUE cmd_queue;
-//    char* mem_fil="memory_all.txt";
-//    char* cmd_fil="cmd_all.txt";
-//    char* stats_fil="stats.txt";
-    char* mem_fil=argv[1];
-    char* cmd_fil=argv[2];
-    char* stats_fil=argv[3];
+    char* mem_fil="memory_all.txt";
+    char* cmd_fil="cmd.txt";
+    char* stats_fil="stats.txt";
+   // char* mem_fil=argv[1];
+   // char* cmd_fil=argv[2];
+   // char* stats_fil=argv[3];
     //initial------------------------------------
     std::cout << "PROCESS MEMORY" << std::endl;
     mem_file(mem_fil,&memory);
@@ -52,8 +47,8 @@ int main(int argc,char* argv[])
     #endif // LEVEL_TWO
     std::cout<<"INITIAL SUCCESS\n"<<std::endl;
     //----------------------------initial ok-----------
-    #ifdef WRT_THROUGH
     std::list<CMD>::iterator iter;
+    #ifdef WRT_THROUGH
         for(iter=cmd_queue.begin();iter!=cmd_queue.end();iter++)
         {
             extern u64 cmd_counter;
@@ -66,6 +61,15 @@ int main(int argc,char* argv[])
             #endif // LEVEL_TWO
         }
     #endif // WRT_THROUGH
+    #ifdef MESI
+        for(iter=cmd_queue.begin();iter!=cmd_queue.end();iter++)
+        {
+            extern u64 cmd_counter;
+            cmd_counter=cmd_counter+1;
+            if(cmd_counter%CMD_THRESHOLD==0){IPRINTF("EXE %llu\n",cmd_counter);}
+            mesi(&(*iter),&memory,L1,&L2,L1SIZE,L2SIZE,L1_ASSOC,L2_ASSOC,CPU);
+        }
+    #endif // MESI
     std::cout<<"PROCESS FINISH\n"<<std::endl;
     get_stats(stats_fil);
     std::cout<<"STATS FINISH\n"<<std::endl;

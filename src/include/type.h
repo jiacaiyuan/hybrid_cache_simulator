@@ -18,8 +18,8 @@ AlSO you can config the DEBUG MODE about it */
 
 #define CPU 4
 
-#define DEBUG
-#define INFO
+//#define DEBUG
+//#define INFO
 #define ERROR
 
 #define LEVEL_TWO
@@ -42,9 +42,11 @@ AlSO you can config the DEBUG MODE about it */
 //#define WRT_INVALID
 
 
-#define WRT_THROUGH
+//#define WRT_THROUGH
 #define LRU
 
+
+#define MESI
 
 
 

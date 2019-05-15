@@ -128,15 +128,14 @@ u64 evict_block (u64 addr,CACHE* cache,int cache_size,int assoc)
     {
         if((index==(*iter).index)&(tagger==(*iter).tagger))
         {
+            u64 evict_addr= decode_cache((*iter),cache_size,assoc);
             (*cache).erase(iter);
-            return addr;
+            return evict_addr;
         }
     }
     EPRINTF("NO CACHE BLOCK\n");
     return -1;
 }
-
-
 
 void display(CACHE* cache,int cache_size,int assoc)
 {

@@ -46,7 +46,7 @@ int read(CMD* cmd,CACHE* cache,int cache_size,int assoc)
         if(!check_data(cmd,block,cache_size,assoc))
         {
             IPRINTF("WARNING:READ DATA DIFF\n");
-            write(cmd,cache,cache_size,assoc);
+            //write(cmd,cache,cache_size,assoc);//comment it for making statistics correctly
             //how to process the different data between cmd and memory in the trace,maybe comment it is better
         }
         for(i=0;i<(cmd->lenth);i++) { cmd->data[i]=block->data[(addr+CACHELINE-1)-(cmd->addr+cmd->lenth-1)+i];}//read the data
@@ -126,11 +126,10 @@ int store(CMD* cmd,MEMORY* memory)
 }
 
 
-
 int load(CMD* cmd,MEMORY* memory,CACHE* cache,int cache_size,int assoc)
 {
     int in;
-    DPRINTF("LOAD MEMORY TO L1 CACHE\n");
+    DPRINTF("LOAD MEMORY TO CACHE\n");
     if(check_full(cmd->addr,cache,cache_size,assoc)) { evict(cmd->addr,cache,cache_size,assoc);}
     MEM_CELL* cell=find_mem(cmd,memory, &in);
     load_cache(cache,cell,cache_size,assoc);

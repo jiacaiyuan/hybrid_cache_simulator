@@ -43,11 +43,11 @@ u64 evict (u64 addr,CACHE* cache,int cache_size,int assoc)
     decode_addr(addr,&tagger,&index,cache_size,assoc);
     std::list<CACHEBLCOK>::iterator iter;
     for(iter = (*cache).begin(); iter != (*cache).end(); iter++)
-    {
+    {   //head is the oldest
         if(index==(*iter).index)
         {
             u64 evict_addr= decode_cache((*iter),cache_size,assoc);
-            (*cache).erase(iter);
+            (*cache).erase(iter);//due to the write_through we don't using it again,so can erase it easily
             return evict_addr;
         }
     }
@@ -56,4 +56,29 @@ u64 evict (u64 addr,CACHE* cache,int cache_size,int assoc)
 }
 
 
-
+CACHEBLCOK evict_wb (u64 addr,CACHE* cache,int cache_size,int assoc)
+{
+    u64 index,tagger;
+    int i;
+    CACHEBLCOK evict_block;
+    decode_addr(addr,&tagger,&index,cache_size,assoc);
+    std::list<CACHEBLCOK>::iterator iter;
+    for(iter = (*cache).begin(); iter != (*cache).end(); iter++)
+    {
+        if(index==(*iter).index)
+        {
+            evict_block.flag=(*iter).flag;
+            evict_block.index=(*iter).index;
+            evict_block.tagger=(*iter).tagger;
+            for(i=0;i<CACHELINE;i++){evict_block.data[i]=(*iter).data[i];}
+            (*cache).erase(iter);//due to the write back,if evict it ,we need to get the block to write back
+            return evict_block;
+        }
+    }
+    evict_block.flag=-1;
+    evict_block.index=-1;
+    evict_block.tagger=-1;
+    for(i=0;i<CACHELINE;i++){evict_block.data[i]=-1;}
+    EPRINTF("NO CACHE BLOCK EVICT LRU\n");
+    return evict_block;
+}
