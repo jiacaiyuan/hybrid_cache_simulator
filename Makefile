@@ -42,4 +42,5 @@ demo:
 
 clean:
 	-rm $(OBJ_DIR)/* $(BIN_DIR)/*
+#NOTE: don't update for makefile ,you can just runing the consistency of wrt_through and change the define in type.h to use the Makefile
 
