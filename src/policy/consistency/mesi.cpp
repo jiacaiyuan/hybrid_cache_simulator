@@ -74,7 +74,6 @@ int wrt_back(CACHEBLCOK* block,CACHE* cache,int l1_size,int l2_size,int l1_assoc
             }
         }
     }
-    printf("running----------------------1\n");
     EPRINTF("NO CACHE BLOCK\n");
     return -1;
 }
@@ -91,13 +90,25 @@ int evict_wrt_back(CMD* cmd,CACHE* L1,CACHE* L2,int l1_size,int l2_size,int l1_a
     return 0;
 }
 
-int evict_wrt_back(CMD* cmd,MEMORY* memory,CACHE* cache,int cache_size,int assoc)//evict l2 and write back to memory
+int evict_wrt_back(CMD* cmd,MEMORY* memory,CACHE* L1,CACHE* L2,int l1_size,int l2_size,int l1_assoc,int l2_assoc,int cpu)//evict l2 and write back to memory
 {
     CACHEBLCOK e_block;
-    if(check_full(cmd->addr,cache,cache_size,assoc))
+    u64 addr,index,tagger;
+    int i;
+    if(check_full(cmd->addr,L2,l2_size,l2_assoc))
     {
-        e_block=evict_wb(cmd->addr,cache,cache_size,assoc);
-        wrt_back(&e_block,memory,cache_size,assoc);
+        e_block=evict_wb(cmd->addr,L2,l2_size,l2_assoc);
+        addr=decode_cache(e_block,l2_size,l2_assoc);
+        decode_addr(addr,&tagger,&index,l1_size,l1_assoc);
+        std::list<CACHEBLCOK>::iterator iter;
+        for(i=0;i<cpu;i++)
+        {
+            for(iter = L1[i].begin();iter != L1[i].end(); iter++)
+            {
+                if(((*iter).index==index)&((*iter).tagger==tagger)) { set_flag(&(*iter),INVALID);}
+            }
+        }
+        wrt_back(&e_block,memory,l2_size,l2_assoc);
     }
     return 0;
 }
@@ -230,7 +241,7 @@ int mesi(CMD* cmd,MEMORY* memory,CACHE* L1,CACHE* L2,int l1_size,int l2_size,int
             else
             {
                 avoid_null(cmd,memory);
-                evict_wrt_back(cmd,memory,L2,l2_size,l2_assoc);
+                evict_wrt_back(cmd,memory,L1,L2,l1_size,l2_size,l1_assoc,l2_assoc,cpu);
                 load(cmd,memory,L2,l2_size,l2_assoc);
                 set_flag(cmd,L2,l2_size,l2_assoc,EXCLUSIVE);
                 load(cmd,&L1[cmd->owner],L2,l1_size,l2_size,l1_assoc,l2_assoc);
@@ -257,7 +268,7 @@ int mesi(CMD* cmd,MEMORY* memory,CACHE* L1,CACHE* L2,int l1_size,int l2_size,int
             else
             {
                 avoid_null(cmd,memory);
-                evict_wrt_back(cmd,memory,L2,l2_size,l2_assoc);
+                evict_wrt_back(cmd,memory,L1,L2,l1_size,l2_size,l1_assoc,l2_assoc,cpu);
                 load(cmd,memory,L2,l2_size,l2_assoc);
                 set_flag(cmd,L2,l2_size,l2_assoc,MODIFIED);
                 load(cmd,&L1[cmd->owner],L2,l1_size,l2_size,l1_assoc,l2_assoc);
