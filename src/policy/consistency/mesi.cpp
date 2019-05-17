@@ -10,6 +10,7 @@
 void set_flag(CACHEBLCOK* block,u32 flag)
 {
     block->flag=(((block->flag)>>MESI_BIT)<<MESI_BIT)|((flag)&MESI_MASK);
+    //right shift and left shift to clear the status flag,and write other flag to the block
 }
 
 void set_flag(CMD* cmd,CACHE* cache,int cache_size,int assoc,u32 flag)
@@ -19,6 +20,7 @@ void set_flag(CMD* cmd,CACHE* cache,int cache_size,int assoc,u32 flag)
     decode_addr(cmd->addr,&tagger,&index,cache_size,assoc);
     for(iter = (*cache).begin(); iter != (*cache).end(); iter++)
     {
+        //find the block according the cmd's addr and set the flag of the block
         if((tagger==(*iter).tagger)&(index==(*iter).index)) { set_flag(&(*iter),flag); }
     }
 }
@@ -67,7 +69,7 @@ int wrt_back(CACHEBLCOK* block,CACHE* cache,int l1_size,int l2_size,int l1_assoc
         for(iter=(*cache).begin();iter!=(*cache).end();iter++)
         {
             if((index==(*iter).index)&(tagger==(*iter).tagger))
-            {
+            {   //find the block evict from L1 cache and in L2 Cache must
                 for(i=0;i<CACHELINE;i++) {(*iter).data[i]=block->data[i];}
                 (*iter).flag=block->flag;
                 return 0;
@@ -84,7 +86,7 @@ int evict_wrt_back(CMD* cmd,CACHE* L1,CACHE* L2,int l1_size,int l2_size,int l1_a
     CACHEBLCOK e_block;
     if(check_full(cmd->addr,&L1[cmd->owner],l1_size,l1_assoc))
     {
-        e_block=evict_wb(cmd->addr,&L1[cmd->owner],l1_size,l1_assoc);
+        e_block=evict_wb(cmd->addr,&L1[cmd->owner],l1_size,l1_assoc);//get the evict block
         wrt_back(&e_block,L2,l1_size,l2_size,l1_assoc,l2_assoc);
     }
     return 0;
@@ -110,6 +112,10 @@ int evict_wrt_back(CMD* cmd,MEMORY* memory,CACHE* L1,CACHE* L2,int l1_size,int l
         }
         wrt_back(&e_block,memory,l2_size,l2_assoc);
     }
+    //there may be one condition that the block evict from L2 cache is in the state of MES, and L1 has the same block,
+    //when the block in L2 is evicted to Memory if the same block in L1 need to write back to L2 cache, it's not in L2
+    // and may some error generate, so when the block in L2 is evicted, the same block in L2 need to be set INVALID, in
+    // this way the block in L1 can't write back to L2
     return 0;
 }
 
@@ -137,6 +143,9 @@ int BusUpgr(CMD* cmd,MEMORY* memory,CACHE* L1,CACHE* L2,int l1_size,int l2_size,
         if((tagger==(*iter).tagger)&(index==(*iter).index)) { set_flag(&(*iter),INVALID); }
     }
     return 0;
+    //when to write the block in L1 if the state of the block is SHARED, it means that other Cache has same block
+    //if write to the block ,other block is the old value, which may cause the inconsistency so the bus send the busupgr
+    // to tell other Cache that the block in their own Cache is INVALID
 }
 
 CACHEBLCOK BusRd(CMD* cmd,MEMORY* memory,CACHE* L1,CACHE* L2,int l1_size,int l2_size,int l1_assoc,int l2_assoc,int cpu,int* get)
@@ -144,9 +153,10 @@ CACHEBLCOK BusRd(CMD* cmd,MEMORY* memory,CACHE* L1,CACHE* L2,int l1_size,int l2_
     int i,j,in;
     CACHEBLCOK new_block;
     CACHEBLCOK* block;
-    decode_addr(cmd->addr,&(new_block.tagger),&(new_block.index),l1_size,l1_assoc);
+    decode_addr(cmd->addr,&(new_block.tagger),&(new_block.index),l1_size,l1_assoc);//get the base information of new block
     for(i=0;i<cpu;i++)
     {
+        //find in other L1 Cache
         if(i==cmd->owner){continue;}
         block=find_cache(cmd->addr,&L1[i],l1_size,l1_assoc,&in);
         if((in==1)&(((get_flag(block))==EXCLUSIVE)|((get_flag(block))==MODIFIED)|((get_flag(block))==SHARED)))
@@ -154,22 +164,23 @@ CACHEBLCOK BusRd(CMD* cmd,MEMORY* memory,CACHE* L1,CACHE* L2,int l1_size,int l2_
             set_flag(block,SHARED);
             set_flag(&new_block,SHARED);
             for(j=0;j<CACHELINE;j++) { new_block.data[j]=block->data[j];}
-            if((get_flag(block))==MODIFIED){wrt_back(block,memory,l1_size,l1_assoc);}//modify need to write to the memory
+            if((get_flag(block))==MODIFIED){wrt_back(block,memory,l1_size,l1_assoc);}//modify need to write to the memory,bus action required
             *get=1;
             return new_block;
         }
     }
+    //find in the L2 cache
     block=find_cache(cmd->addr,L2,l2_size,l2_assoc,&in);
     if((in==1)&(((get_flag(block))==EXCLUSIVE)|((get_flag(block))==MODIFIED)|((get_flag(block))==SHARED)))
     {
         set_flag(block,SHARED);
         set_flag(&new_block,SHARED);
         for(j=0;j<CACHELINE;j++) { new_block.data[j]=block->data[j];}
-        if((get_flag(block))==MODIFIED){wrt_back(block,memory,l1_size,l1_assoc);}//modify need to write to the memory
+        if((get_flag(block))==MODIFIED){wrt_back(block,memory,l1_size,l1_assoc);}//modify need to write to the memory,bus action required
         *get=1;
         return new_block;
     }
-    *get=0;
+    *get=0;//get is 0 and we don't use the new_block
     new_block.flag=-1;
     new_block.index=-1;
     new_block.tagger=-1;
@@ -185,6 +196,7 @@ CACHEBLCOK BusRdx(CMD* cmd,MEMORY* memory,CACHE* L1,CACHE* L2,int l1_size,int l2
     decode_addr(cmd->addr,&(new_block.tagger),&(new_block.index),l1_size,l1_assoc);
     for(i=0;i<cpu;i++)
     {
+        //find in L1 Cache
         if(i==cmd->owner){continue;}
         block=find_cache(cmd->addr,&L1[i],l1_size,l1_assoc,&in);
         if((in==1)&(((get_flag(block))==EXCLUSIVE)|((get_flag(block))==MODIFIED)|((get_flag(block))==SHARED)))
@@ -192,11 +204,12 @@ CACHEBLCOK BusRdx(CMD* cmd,MEMORY* memory,CACHE* L1,CACHE* L2,int l1_size,int l2
             set_flag(block,INVALID);
             set_flag(&new_block,MODIFIED);
             for(j=0;j<CACHELINE;j++) { new_block.data[j]=block->data[j];}
-            if((get_flag(block))==MODIFIED){wrt_back(block,memory,l1_size,l1_assoc);}//modify need to write to the memory
+            if((get_flag(block))==MODIFIED){wrt_back(block,memory,l1_size,l1_assoc);}//modify need to write to the memory,bus action required
             *get=1;
             return new_block;
         }
     }
+    //find in L2 Cache
     block=find_cache(cmd->addr,L2,l2_size,l2_assoc,&in);
     if((in==1)&(((get_flag(block))==EXCLUSIVE)|((get_flag(block))==MODIFIED)|((get_flag(block))==SHARED)))
     {
@@ -207,7 +220,7 @@ CACHEBLCOK BusRdx(CMD* cmd,MEMORY* memory,CACHE* L1,CACHE* L2,int l1_size,int l2
         *get=1;
         return new_block;
     }
-    *get=0;
+    *get=0;//get is 0 and we don't use the new_block
     new_block.flag=-1;
     new_block.index=-1;
     new_block.tagger=-1;
@@ -232,7 +245,7 @@ int mesi(CMD* cmd,MEMORY* memory,CACHE* L1,CACHE* L2,int l1_size,int l2_size,int
         }
         else
         {
-            //evict the useless block in owner  L1 cache
+            //evict the useless block in owner L1 cache
             if((in==1)&((get_flag(block))==INVALID)){evict_block(cmd->addr,&L1[cmd->owner],l1_size,l1_assoc);}
             else { evict_wrt_back(cmd,L1,L2,l1_size,l2_size,l1_assoc,l2_assoc);}//not in evict and write back
             //load in
@@ -243,9 +256,9 @@ int mesi(CMD* cmd,MEMORY* memory,CACHE* L1,CACHE* L2,int l1_size,int l2_size,int
                 avoid_null(cmd,memory);
                 evict_wrt_back(cmd,memory,L1,L2,l1_size,l2_size,l1_assoc,l2_assoc,cpu);
                 load(cmd,memory,L2,l2_size,l2_assoc);
-                set_flag(cmd,L2,l2_size,l2_assoc,EXCLUSIVE);
+                set_flag(cmd,L2,l2_size,l2_assoc,EXCLUSIVE);//to ensure the block when load in has flag
                 load(cmd,&L1[cmd->owner],L2,l1_size,l2_size,l1_assoc,l2_assoc);
-                set_flag(cmd,&L1[cmd->owner],l1_size,l1_assoc,EXCLUSIVE);
+                set_flag(cmd,&L1[cmd->owner],l1_size,l1_assoc,EXCLUSIVE);//to ensure the block when load in has flag
             }
             read(cmd,&L1[cmd->owner],l1_size,l1_assoc);
         }
@@ -270,9 +283,9 @@ int mesi(CMD* cmd,MEMORY* memory,CACHE* L1,CACHE* L2,int l1_size,int l2_size,int
                 avoid_null(cmd,memory);
                 evict_wrt_back(cmd,memory,L1,L2,l1_size,l2_size,l1_assoc,l2_assoc,cpu);
                 load(cmd,memory,L2,l2_size,l2_assoc);
-                set_flag(cmd,L2,l2_size,l2_assoc,MODIFIED);
+                set_flag(cmd,L2,l2_size,l2_assoc,MODIFIED);//to ensure the block when load in has flag
                 load(cmd,&L1[cmd->owner],L2,l1_size,l2_size,l1_assoc,l2_assoc);
-                set_flag(cmd,&L1[cmd->owner],l1_size,l1_assoc,MODIFIED);
+                set_flag(cmd,&L1[cmd->owner],l1_size,l1_assoc,MODIFIED);//to ensure the block when load in has flag
             }
         }
         write(cmd,&L1[cmd->owner],l1_size,l1_assoc);

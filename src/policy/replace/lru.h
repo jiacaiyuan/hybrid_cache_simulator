@@ -25,6 +25,7 @@ int update_lru(CACHE* cache,CACHEBLCOK* cacheblock);
 /*Evict the CacheBlock in the Assoc Group about the same index*/
 u64 evict (u64 addr,CACHE* cache,int cache_size,int assoc);
 
+/*Evict the CacheBlock in the Assoc and return the block for check the flag and write back*/
 CACHEBLCOK evict_wb (u64 addr,CACHE* cache,int cache_size,int assoc);
 
 #endif // LRU_H_INCLUDED
