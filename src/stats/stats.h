@@ -21,4 +21,6 @@ int add_stats(FILE* fp_stats,u64 stats,char* name);
 /*do collect the stats variable*/
 int get_stats(char* fil_name);
 
+/*auto gen the system config information*/
+void config_out(char* fil_name);
 #endif // STATS_H_INCLUDED

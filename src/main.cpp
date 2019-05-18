@@ -31,10 +31,14 @@ int main(int argc,char* argv[])
 //    char* mem_fil="memory_all.txt";
 //    char* cmd_fil="cmd_all.txt";
 //    char* stats_fil="stats.txt";
+//    char* cfg_fil="system.cfg";
     char* mem_fil=argv[1];
     char* cmd_fil=argv[2];
     char* stats_fil=argv[3];
+    char* cfg_fil=argv[4];
     //initial------------------------------------
+    std::cout << "CONFIG SYSTEM" << std::endl;
+    config_out(cfg_fil);
     std::cout << "PROCESS MEMORY" << std::endl;
     mem_file(mem_fil,&memory);
     std::cout << "PROCESS COMMAND" << std::endl;

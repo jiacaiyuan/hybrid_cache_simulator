@@ -37,6 +37,7 @@ int wrt_back(CACHEBLCOK* block,MEMORY* memory,int cache_size,int assoc)
 {
     int i;
     std::vector<MEM_CELL>::iterator iter;
+    DPRINTF("WRITE BACK TO MEMORY\n");
     if((get_flag(block))==INVALID) {return 0;}
     else
     {
@@ -61,6 +62,7 @@ int wrt_back(CACHEBLCOK* block,CACHE* cache,int l1_size,int l2_size,int l1_assoc
     int i;
     u64 index,tagger;
     std::list<CACHEBLCOK>::iterator iter;
+    DPRINTF("WRITE BACK TO NEXT CACHE\n");
     if((get_flag(block))==INVALID) {return 0;}
     else
     {
@@ -125,6 +127,7 @@ int BusUpgr(CMD* cmd,MEMORY* memory,CACHE* L1,CACHE* L2,int l1_size,int l2_size,
     int i;
     u64 index,tagger;
     std::list<CACHEBLCOK>::iterator iter;
+    DPRINTF("BUS FUNC BUSUPGR\n");
     decode_addr(cmd->addr,&tagger,&index,l1_size,l1_assoc);
     for(i=0;i<cpu;i++)
     {
@@ -153,6 +156,7 @@ CACHEBLCOK BusRd(CMD* cmd,MEMORY* memory,CACHE* L1,CACHE* L2,int l1_size,int l2_
     int i,j,in;
     CACHEBLCOK new_block;
     CACHEBLCOK* block;
+    DPRINTF("BUS FUNC BUSRD\n");
     decode_addr(cmd->addr,&(new_block.tagger),&(new_block.index),l1_size,l1_assoc);//get the base information of new block
     for(i=0;i<cpu;i++)
     {
@@ -193,6 +197,7 @@ CACHEBLCOK BusRdx(CMD* cmd,MEMORY* memory,CACHE* L1,CACHE* L2,int l1_size,int l2
     int i,j,in;
     CACHEBLCOK* block;
     CACHEBLCOK new_block;
+    DPRINTF("BUS FUNC BUSRDX\n");
     decode_addr(cmd->addr,&(new_block.tagger),&(new_block.index),l1_size,l1_assoc);
     for(i=0;i<cpu;i++)
     {

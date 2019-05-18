@@ -1,22 +1,36 @@
+#***** ***** ***** ***** ***** ***** ***** ***** ***** ***** *****
+#Author:   jcyuan
+#E-Mail:   yuan861025184@163.com
+#Project:  hybrid cache simulator
+#Function: Makefile
+#***** ***** ***** ***** ***** ***** ***** ***** ***** ***** *****
 CC=g++
 PARA= -Wall -fexceptions -g -std=c++11 
+PY=python
 SRC_DIR=./src
 OBJ_DIR=./obj
 BIN_DIR=./bin
+CFG_DIR=./config
+STATS_DIR=./stats
+UTIL_DIR=./utils
 TARGET=hc_simu
 
+TRACE_FILE=./demo/test_1_nvmain.txt
 MEM_FILE=./demo/memory_all.txt
 CMD_FILE= ./demo/cmd_all.txt
 #MEM_FILE=./demo/memory.txt
 #CMD_FILE= ./demo/cmd.txt
-STAT_FILE=./stats/stats.txt
+STAT_FILE=$(STATS_DIR)/stats.txt
+CFG_OUT=$(STATS_DIR)/system.cfg
+CFG_FILE=$(CFG_DIR)/sys_cfg.cfg
+
 
 .PHONY:default
-default: compile demo
+default: get_trace config compile demo
 
 
-
-.PHONY:BASERA) 
+#-----------------------------C++ Compile----------------------------------------------------
+.PHONY:BASE 
 BASE:
 	$(CC) $(PARA) -c $(SRC_DIR)/cache/cache.cpp -o $(OBJ_DIR)/cache.o
 	$(CC) $(PARA) -c $(SRC_DIR)/cmd/command.cpp -o $(OBJ_DIR)/command.o
@@ -39,11 +53,31 @@ MESI:
 .PHONY:compile
 compile:BASE LRU WRT_THROUGH MESI
 	$(CC) -o $(BIN_DIR)/$(TARGET) $(OBJ_DIR)/*.o
-		
+#------------------------------------------------------------------------------------------
+
+
+#-----------------------------------------Python Config-----------------------------------
+.PHONY:help
+help:
+	$(PY) $(SRC_DIR)/config/config.py -h
+
+.PHONY:config
+config:
+	chmod 775 $(SRC_DIR)/config/*
+	$(PY) $(SRC_DIR)/config/config.py -F -f $(CFG_FILE)	
+	mv type.h $(SRC_DIR)/include/
+.PHONY:get_trace
+get_trace:
+	$(PY) $(UTIL_DIR)/get_info.py -i $(TRACE_FILE) -f cmd -o $(CMD_FILE)
+	$(PY) $(UTIL_DIR)/get_info.py -i $(TRACE_FILE) -f memory -o $(MEM_FILE)
+#-----------------------------------------------------------------------------------------
+
+
+	
 .PHONY:demo
 demo:
-	$(BIN_DIR)/$(TARGET) $(MEM_FILE) $(CMD_FILE) $(STAT_FILE)
+	$(BIN_DIR)/$(TARGET) $(MEM_FILE) $(CMD_FILE) $(STAT_FILE) $(CFG_OUT)
 
 clean:
-	-rm $(OBJ_DIR)/* $(BIN_DIR)/*
+	-rm $(OBJ_DIR)/* $(BIN_DIR)/* $(STATS_DIR)/*
 
